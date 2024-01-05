@@ -1,0 +1,40 @@
+function dbIndex = calculateDBIndex(S, centers, U, m)
+numClusters = size(centers, 1);
+numSamples = numel(S);
+
+% 计算每个簇内样本之间的加权平均距离
+intraClusterDistances = zeros(numClusters, 1);
+for k = 1:numClusters
+    clusterSamples = find(S.C == k);
+    clusterSize = numel(clusterSamples);
+    
+    if clusterSize > 1
+        weightedDistances = zeros(clusterSize, 1);
+        for i = 1:clusterSize
+            for j = 1:clusterSize
+                if i ~= j
+                    % 计算样本之间的加权距离
+                    weightedDistances(i) = weightedDistances(i) + U(clusterSamples(i), k) * U(clusterSamples(j), k) * norm([S(clusterSamples(i)).x, S(clusterSamples(i)).y] - [S(clusterSamples(j)).x, S(clusterSamples(j)).y]);
+                end
+            end
+        end
+        intraClusterDistances(k) = sum(weightedDistances) / (2 * sum(U(clusterSamples, k)));
+    else
+        intraClusterDistances(k) = 0;  % 如果簇内只有一个样本，距离为零
+    end
+end
+
+% 计算簇间距离
+interClusterDistances = zeros(numClusters, 1);
+for i = 1:numClusters
+    for j = 1:numClusters
+        if i ~= j
+            % 计算簇间加权距离
+            interClusterDistances(i) = interClusterDistances(i) + U(i, j) * norm(centers(i, :) - centers(j, :));
+        end
+    end
+end
+
+% 计算DB指数
+dbIndex = sum((intraClusterDistances + intraClusterDistances) ./ interClusterDistances) / numClusters;
+end

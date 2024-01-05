@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>图像处理</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            margin-top: 20px;
+        }
+
+        .image-box {
+            border: 1px solid white;
+            width: 45%;
+            box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+            height: 400px;
+            margin-right: 10px;
+        }
+
+        .image-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .text-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            font-size: 20px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .buttons-container button {
+            margin-right: 10px; /* 调整右边距 */
+            margin-bottom: 10px; /* 调整下边距 */
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .buttons-container {
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+<canvas id="canvas"></canvas>
+<div class="image-container">
+    <div class="image-box" id="leftBox">
+        <img src="" alt="原始图像">
+    </div>
+    <div class="image-box" id="rightBox">
+        <img src="" alt="目标图像">
+    </div>
+</div>
+<div class="buttons-container">
+    <form action="/test" method="post">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">灰度图</button>
+    </form>
+    <form action="/test2" method="post">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">二值图</button>
+    </form>
+    <form action="/test3" method="post">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">直方图均衡化</button>
+    </form>
+    <form action="/test4" method="post">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">图像平滑</button>
+    </form>
+    <form action="/test5" method="post">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">图像锐化</button>
+    </form>
+    <form action="/test6" method="post">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">图像分割</button>
+    </form>
+
+    <form action="/test7" method="post" style="display: flex;align-items: center;">
+        <input type="text" id="factor" name="factor"
+               style="width:100px;height:48px;margin-top:10px;margin-right: 5px;"/>
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">亮度调节</button>
+    </form>
+    <form action="/test8" method="post" style="display: flex;align-items: center;">
+        <input type="hidden" name="imagesid" value="{{ imagesid }}">
+        <button type="submit" class="process-button">图像风格迁移</button>
+    </form>
+</div>
+
+<form id="imagesForm" action="/test" method="post">
+    <input type="hidden" name="imagesid" id="imagesidInput" value="{{ imagesid }}">
+</form>
+
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Bubble {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.dx = Math.random() - 0.5;
+            this.dy = Math.random() - 0.5;
+            this.speed = Math.random() * 5 + 1;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+
+        update() {
+            if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                this.dx = -this.dx;
+            }
+            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                this.dy = -this.dy;
+            }
+            this.x += this.dx * this.speed;
+            this.y += this.dy * this.speed;
+        }
+    }
+
+    const bubbles = [];
+
+    function init() {
+        for (let i = 0; i < 30; i++) {
+            const radius = Math.random() * 50 + 10;
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+            const y = Math.random() * (canvas.height - radius * 2) + radius;
+            const color = `hsla(${Math.random() * 360}, 100%, 50%, 0.8)`;
+            bubbles.push(new Bubble(x, y, radius, color));
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bubbles.forEach((bubble) => {
+            bubble.draw();
+            bubble.update();
+        });
+    }
+
+    init();
+    animate();
+
+    const leftBox = document.getElementById("leftBox");
+    const rightBox = document.getElementById("rightBox");
+
+    const leftImage = document.createElement("img");
+    leftImage.src = "{{ leftImagePath }}";  // 替换为实际的图像路径
+    leftBox.appendChild(leftImage);
+
+    const rightImage = document.createElement("img");
+    rightImage.src = "{{ rightImagePath }}";  // 替换为实际的图像路径
+    rightBox.appendChild(rightImage);
+
+    function submitImagesForm() {
+        // 获取 imagesid 的值（这里假设 imagesid 存在于页面上）
+        var imagesidValue = document.getElementById("imagesid").value;
+
+        // 将 imagesid 的值设置到隐藏的输入字段中
+        document.getElementById("imagesidInput").value = imagesidValue;
+
+        // 提交表单
+        document.getElementById("imagesForm").submit();
+    }
+</script>
+</body>
+
+</html>

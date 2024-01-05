@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图像管理</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: white; /* 设置字体颜色为白色 */
+            position: relative; /* 设置相对定位，使得子元素可以相对于 body 定位 */
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* 设置 z-index 为 -1，将其置于底层 */
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4rem; /* 调整上边距 */
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px;
+        }
+
+        th, td {
+            border: 1px solid white; /* 设置表格边框为白色 */
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #343a40; /* 设置表头背景色 */
+        }
+
+        tr:nth-child(even) {
+            background-color: #343a40; /* 设置偶数行背景色 */
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Bubble {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.dx = Math.random() - 0.5;
+            this.dy = Math.random() - 0.5;
+            this.speed = Math.random() * 5 + 1;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+
+        update() {
+            if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                this.dx = -this.dx;
+            }
+            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                this.dy = -this.dy;
+            }
+            this.x += this.dx * this.speed;
+            this.y += this.dy * this.speed;
+        }
+    }
+
+    const bubbles = [];
+
+    function init() {
+        for (let i = 0; i < 30; i++) {
+            const radius = Math.random() * 50 + 10;
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+            const y = Math.random() * (canvas.height - radius * 2) + radius;
+            const color = `hsla(${Math.random() * 360}, 100%, 50%, 0.8)`;
+            bubbles.push(new Bubble(x, y, radius, color));
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bubbles.forEach((bubble) => {
+            bubble.draw();
+            bubble.update();
+        });
+    }
+
+    init();
+    animate();
+</script>
+
+<div class="container mt-4">
+    <div style="display: flex;">
+    <form id="postForm" action="/getByClasses" method="post">
+        <label for="inputData">图片类型</label>
+        <input type="text" id="inputData" name="inputData">
+        <button type="submit" class="btn btn-primary">查询</button>
+    </form>&nbsp
+    <form action="/goimage">
+        <button type="submit" class="btn btn-primary">返回</button>
+    </form>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>图片id</th>
+            <th>图片名称</th>
+            <th>图片位置</th>
+            <th>图片类别</th>
+            <th>可能性</th>
+            <th>上传时间</th>
+            <th>具体操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for image in images %}
+            <tr>
+                <td>{{ image.imagesid }}</td>
+                <td>{{ image.filename }}</td>
+                <td>{{ image.filepath }}</td>
+                <td>{{ image.classes }}</td>
+                <td>{{ image.possibility }}</td>
+                <td>{{ image.eventtime }}</td>
+                <td>
+                    <form action="/goimage3" method="post">
+                        <input type="hidden" name="imagesid" value="{{ image.imagesid }}">
+                        <button type="submit" class="process-button">图像处理</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>歌词生成</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css"/>
+    <script src="/static/assets/js/jquery.min.js"></script>
+    <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function genSongAjax() {
+            startWords = document.getElementById('startWords').value
+            nums = document.getElementById('nums').value
+            if (startWords != "" && nums != "") {
+                $.ajax({
+                    url: '/gensong',
+                    method: 'get',
+                    data: {
+                        startwords: startWords,
+                        nums: nums
+                    },
+                    dataType: 'json',
+                    success: function (jsonData) {
+                        if (jsonData.success == 1) {
+                            divObj = document.getElementById('songs')
+                            divObj.innerHTML = jsonData.content
+                        }
+                    }
+                })
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="card card-body">
+    <div class="card card-body">
+        <div class="form-inline">
+            请输入开头: <input type="text" name="startWords" class="form-control" id="startWords"/>
+            请输入生成长度：<input type="text" name="nums" class="form-control" id="nums"/>&nbsp;
+            <button class="btn btn-primary" onclick="genSongAjax()">生成</button>
+        </div>
+    </div>
+    <div class="card card-body">
+        <fieldset style="border: 1px red dashed;margin-top: 10px;">
+            <div id="songs">
+
+            </div>
+        </fieldset>
+    </div>
+</div>
+</body>
+</html>

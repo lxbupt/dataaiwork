@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>歌词生成</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css"/>
+    <script src="/static/assets/js/jquery.min.js"></script>
+    <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function genSongAjax() {
+            startWords = document.getElementById('startWords').value
+            nums = document.getElementById('nums').value
+            if (startWords != "" && nums != "") {
+                $.ajax({
+                    url: '/gensong',
+                    method: 'get',
+                    data: {
+                        startwords: startWords,
+                        nums: nums
+                    },
+                    dataType: 'json',
+                    success: function (jsonData) {
+                        if (jsonData.success == 1) {
+                            divObj = document.getElementById('songs')
+                            divObj.innerHTML = jsonData.content
+                        }
+                    }
+                })
+            }
+        }
+
+        function getAllSongsAjax() {
+            $.ajax({
+                url: '/allsongs',
+                method: 'get',
+                dataType: 'json',
+                success: function (jsonData) {
+                    if (jsonData.success == 1) {
+                        displayAllSongs(jsonData.content);
+                    }
+                }
+            });
+        }
+
+        function displayAllSongs(songs) {
+            const allSongsDiv = document.getElementById('allSongs');
+            allSongsDiv.innerHTML = '<h4>所有歌曲信息：</h4>';
+
+            if (songs.length > 0) {
+                // 创建表格
+                const table = document.createElement('table');
+                table.className = 'table table-bordered';
+
+                // 表头
+                const tableHead = document.createElement('thead');
+                tableHead.innerHTML = '<tr><th>ID</th><th>开头</th><th>长度</th><th>歌词</th></tr>';
+                table.appendChild(tableHead);
+
+                // 表格内容
+                const tableBody = document.createElement('tbody');
+                songs.forEach(song => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${song.id}</td><td>${song.start}</td><td>${song.length}</td><td>${song.content}</td>`;
+                    tableBody.appendChild(row);
+                });
+
+                table.appendChild(tableBody);
+                allSongsDiv.appendChild(table);
+            } else {
+                allSongsDiv.innerHTML += '<p>暂无歌曲信息</p>';
+            }
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        h1 {
+            color: white;
+            font-size: 4rem;
+            z-index: 1;
+        }
+
+        /*
+                #allSongs {
+                    overflow-y: auto;
+                    max-height: 200px;
+                }
+        */
+        #allSongs {
+            width: 800px; /* 设置宽度为800像素 */
+            height: 400px; /* 设置高度为600像素 */
+            overflow-y: auto; /* 如果内容超过设定的高度，显示垂直滚动条 */
+        }
+
+        #songs {
+            width: 760px; /* 设置宽度为400像素 */
+            height: 400px; /* 设置高度为200像素 */
+        }
+    </style>
+</head>
+<body>
+<div class="card card-body">
+    <div class="card card-body">
+        <div class="form-inline">
+            请输入开头: <input type="text" name="startWords" class="form-control" id="startWords"/>
+            请输入生成长度：<input type="text" name="nums" class="form-control" id="nums"/>&nbsp;
+            <button class="btn btn-primary" onclick="genSongAjax()">生成</button>
+        </div>
+    </div>
+    <div class="card card-body">
+        <fieldset>
+            <div id="songs"></div>
+        </fieldset>
+    </div>
+</div>
+<canvas id="canvas"></canvas>
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Bubble {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.dx = Math.random() - 0.5;
+            this.dy = Math.random() - 0.5;
+            this.speed = Math.random() * 5 + 1;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+
+        update() {
+            if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                this.dx = -this.dx;
+            }
+            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                this.dy = -this.dy;
+            }
+            this.x += this.dx * this.speed;
+            this.y += this.dy * this.speed;
+        }
+    }
+
+    const bubbles = [];
+
+    function init() {
+        for (let i = 0; i < 50; i++) {
+            const radius = Math.random() * 50 + 10;
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+            const y = Math.random() * (canvas.height - radius * 2) + radius;
+            const color = `hsla(${Math.random() * 360}, 100%, 50%, 0.8)`;
+            bubbles.push(new Bubble(x, y, radius, color));
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bubbles.forEach((bubble) => {
+            bubble.draw();
+            bubble.update();
+        });
+    }
+
+    init();
+    animate();
+</script>
+<div class="card card-body">
+    <button class="btn btn-info" onclick="getAllSongsAjax()">获取所有歌曲信息</button>
+    <fieldset>
+        <div id="allSongs"></div>
+    </fieldset>
+</div>
+</body>
+</html>

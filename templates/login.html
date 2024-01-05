@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>人脸识别登录</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css"/>
+    <script src="/static/assets/js/jquery.min.js"></script>
+    <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
+
+</head>
+<body>
+<div class="d-flex justify-content-center" style="margin-top: 2px;">
+    <span id="info"></span>
+</div>
+<div class="d-flex justify-content-center">
+    <div class="align-self-center" style="width: 600px;height: 400px;border: 1px red dashed;">
+        <video style="width: 600px;height: 400px;" id="video"></video>
+        <canvas style="width: 600px;height: 400px;" id="canvas"></canvas>
+    </div>
+
+</div>
+<div class="d-flex justify-content-center" style="margin-top: 2px;">
+    <button class="btn btn-primary" onclick="captureVideo()" style="width: 600px;">截图</button>
+</div>
+<div class="d-flex justify-content-center" style="margin-top: 2px;">
+    <button class="btn btn-danger" onclick="captureVideo()" style="width: 600px;">登录</button>
+</div>
+<!-- 使用js加载摄像头，读取摄像头中的数据流，并且放到video标签中播放 -->
+<script type="text/javascript">
+    function loadCamera() {
+        video = document.getElementById("video") // 获取id是video的标签的DOM对象
+        constraints = {                          // JSON对象  {key1 : value1 , key2 : value2}
+            video: true,
+            audio: false,
+        }
+        let device = navigator.mediaDevices.getUserMedia(constraints)    // DOM（document object model）  BOM（browser ）
+        device.then(res => {             //可以看出是使用promise封装的 那么我们就可以使用then和catch
+            video.srcObject = res;       //用户允许时 将摄像头对象的画面转移到video上面
+            video.play();                //打开video的画面
+        }).catch(err => {
+            console.log(err)            //拒绝时打印错误信息
+        })
+    }
+
+    // 截图摄像头中的一张图片，并且保存到canvas中   视频 FPS 帧率
+    function captureVideo() {
+        // 获取video对象
+        video = document.getElementById("video")
+        canvas = document.getElementById("canvas")
+        context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, 300, 150)
+        // 将截取的图片传给后台，后台调用模型检测是否有人脸
+        imageData = canvas.toDataURL()   // 转成BASE64编码格式的数据
+        // console.log(imageData)
+        // 向后台传BASE64编码的格式数据
+        imageData = imageData.substring(22, imageData.length)
+        console.log(imageData)
+        // 使用jquery的ajax 发送异步的http请求，post请求
+        $.ajax({
+            url: '/login',
+            method: 'post',
+            data: {
+                imageData: imageData
+            },
+            dataType: 'json',
+            success: function (data) {  // ajax请求成功后，返回数据会交给success回调函数
+                if (data.error_msg == "SUCCESS") {
+                    document.getElementById('info').innerHTML = "<font color='green' style='z-index:999;'>检测到人脸</font>"
+                    if (data.face_login == "SUCCESS") {
+                        document.location.href = "/"   // JavaScript实现链接跳转 <a>
+                    }
+                } else {
+                    document.getElementById('info').innerHTML = "<font color='red' style='z-index:999;'>没有检测到人脸，请靠近摄像头</font>"
+                }
+            }
+        })
+    }
+
+    loadCamera()
+</script>
+</body>
+</html>

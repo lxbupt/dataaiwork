@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>职位详情和推荐</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css"/>
+    <script src="/static/assets/js/jquery.min.js"></script>
+    <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div>
+    <div class="card card-body">
+        <div>
+            <pre>
+                {{ jobs.jobDetail }}
+            </pre>
+        </div>
+    </div>
+    <div class="card card-body">
+        <div class="row">
+            <div>
+                相似职位推荐
+            </div>
+        </div>
+        <div class="row">
+            <table class="table table-responsive-lg">
+                <thead>
+                <tr>
+                    <th>职位ID</th>
+                    <th>职位名称</th>
+                    <th>公司名称</th>
+                    <th>薪资</th>
+                    <th>工作地点</th>
+                    <th>职位类型</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for job in pageList %}
+                    <tr>
+                        <td>{{ job.jobId }}</td>
+                        <td><a href="/jobdetail?jobid={{ job.jobId }}">{{ job.jobName }}</a></td>
+                        <td>{{ job.jobCompany }}</td>
+                        <td>{{ job.jobSalary }}</td>
+                        <td>{{ job.jobAddress }}</td>
+                        <td>{{ job.jobType }}</td>
+                        <td>
+                            <button class="btn btn-primary">详情</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

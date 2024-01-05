@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>图像识别</title>
+    <link rel="stylesheet" href="/static/assets/css/bootstrap.min.css"/>
+    <script src="/static/assets/js/jquery.min.js"></script>
+    <script src="/static/assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function ajaxUploadFile() {
+            var formData = new FormData($('#dataForm')[0]);
+            $.ajax({
+                url: '/cnnimage',
+                method: 'post',
+                dataType: 'json',
+                data: formData,
+                xhr: function () {
+                    myXhr = $.ajaxSettings.xhr();
+                    if (myXhr.upload) {
+                        myXhr.upload.addEventListener('progress', progressHandlingFunction, false);
+                    }
+                    return myXhr;
+                },
+                success: function (result) {
+                    $("#uploadImage").attr("src", result.url);
+                    $("#cnnResult").html('<span style="color: white;">' + result.typeName + '  可能性：' + result.acc + '</span>');
+                },
+                contentType: false,
+                processData: false
+            });
+        }
+
+        function progressHandlingFunction(e) {
+            if (e.lengthComputable) {
+                $('#progress').attr({value: e.loaded, max: e.total});
+                var percent = e.loaded / e.total * 100;
+                $('#progress').html(e.loaded + "/" + e.total + " bytes. " + percent.toFixed(2) + "%");
+                $('#progress').css('width', percent.toFixed(2) + "%");
+            }
+        }
+
+        function goToGoImage2() {
+            window.location.href = "{{ url_for('cnnController.goImage2') }}";
+        }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card {
+            background-color: transparent;
+            border: none;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .mx-auto {
+            margin: auto;
+        }
+
+        .upload-area {
+            border: 1px white dashed;
+            height: 400px;
+            width: 800px;
+            margin: auto;
+            color: white;
+        }
+
+        .result-area {
+            border: 1px white dashed;
+            height: 50px;
+            width: 800px;
+            margin: auto;
+        }
+
+        .form-area {
+            height: 50px;
+            width: 800px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Bubble {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.dx = Math.random() - 0.5;
+            this.dy = Math.random() - 0.5;
+            this.speed = Math.random() * 5 + 1;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+
+        update() {
+            if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                this.dx = -this.dx;
+            }
+            if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                this.dy = -this.dy;
+            }
+            this.x += this.dx * this.speed;
+            this.y += this.dy * this.speed;
+        }
+    }
+
+    const bubbles = [];
+
+    function init() {
+        for (let i = 0; i < 30; i++) {
+            const radius = Math.random() * 50 + 10;
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+            const y = Math.random() * (canvas.height - radius * 2) + radius;
+            const color = `hsla(${Math.random() * 360}, 100%, 50%, 0.8)`;
+            bubbles.push(new Bubble(x, y, radius, color));
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bubbles.forEach((bubble) => {
+            bubble.draw();
+            bubble.update();
+        });
+    }
+
+    init();
+    animate();
+</script>
+
+<div class="card card-body">
+    <div class="row">
+        <div class="upload-area mx-auto">
+            <img alt="请上传图片" src="" style="height: 100%; width: 100%; object-fit: cover;" id="uploadImage">
+        </div>
+
+        <div class="result-area mx-auto">
+            <span id="cnnResult"></span>
+        </div>
+
+        <div class="form-area mx-auto">
+            <form method="post" class="form-inline" id="dataForm">
+                <input type="file" name="uploadFile" class="form-control">&nbsp;
+                <button type="button" class="btn btn-primary" onclick="ajaxUploadFile()">上传</button>
+                <button type="button" class="btn btn-secondary ml-2" onclick="goToGoImage2()">图像管理</button>
+            </form>
+            <progress id="progress"></progress>
+        </div>
+    </div>
+</div>
+</body>
+</html>
